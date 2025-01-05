@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PongEmu"
         mc:Ignorable="d"
+        Background="Black"
         Title="PongEmu Launcher" Height="512" Width="512">
     <Grid>
-        <Button x:Name="button1" Width="60" Height="30" Content="pong.ch8" Click="Button_Click" />
-        <Button x:Name="button2" Width="20" Height="20" Content="close" Click="Button_Click2" />
+        <Button Content="Stop" Click="StopEmulation" Width="120" Height="60" HorizontalAlignment="Center" />
+        <Button Content="Start" Click="RunEmulation" Width="120" Height="60" HorizontalAlignment="Stretch" Margin="10 -140 10 0" />
     </Grid>
 </Window>

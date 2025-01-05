@@ -22,15 +22,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        emu.Run("./roms/", "pong.ch8", Color.Black, Color.White);
     }
 
-    private void Button_Click(object sender, RoutedEventArgs e)
+    private void RunEmulation(object sender, RoutedEventArgs e)
     {
         emu.Run("./roms/", "pong.ch8", Color.Black, Color.White);
     }
 
-    private void Button_Click2(object sender, RoutedEventArgs e)
+    private void StopEmulation(object sender, RoutedEventArgs e)
     {
         emu.Close();
     }
