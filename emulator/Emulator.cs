@@ -2,27 +2,32 @@
 using System.IO; 
 using System.Text; 
 using System.Numerics;
+
 using Raylib_cs;
+
 
 class Emulator {
     // Size of window
-    static int Increase = 10;
+    static int Increase = 20;
     static int[] WindowSize = [64 * Increase, 32 * Increase];
 
     // CPU
     public static byte[] Memory = new byte[4096];
     public static int PC = 0;
-    public static ushort[] Registers = new ushort[16];
+    public static int[] Registers = new int[16];
     public static int I = 0;
-    public static ushort[] Stack = new ushort[16];
+    public static int[] Stack = new int[16];
     public static int SP = 0;
     public static int SoundTimer = 0;
     public static int DelayTimer  = 0;
     public static byte[] ScreenBuffer = new byte[32 * 64];
     public static int FPS = 60;
     public static int Opcode = 0;
+    public static int VX = 0;
+    public static int VY = 0;
 
     public static bool IsDrawing = true;
+
 
     static Dictionary<KeyboardKey, int> KeySet = new Dictionary<KeyboardKey, int>()
     {
@@ -158,26 +163,58 @@ class Emulator {
     
     static void Opcode2NNN() {
         // Calls subroutine at NNN.
+
+        SP = SP + 1;
+        Stack[SP] = PC;
+        PC = Opcode & 0xfff;
     }
     
     static void Opcode3XNN() {
         // Skips the next instruction if VX equals NN (usually the next instruction is a jump to skip a code block).
+
+        if (Registers[VX] == (Opcode & 0x0FF)) {
+            PC = PC + 4;
+        } else {
+            PC = PC + 2;
+        }
     }
 
     static void Opcode4XNN() {
         // Skips the next instruction if VX does not equal NN (usually the next instruction is a jump to skip a code block).
+
+        if (Registers[VX] != (Opcode & 0x00FF)) {
+            PC = PC + 4;
+        } else {
+            PC = PC + 2;
+        }
     }
     
     static void Opcode5XY0() {
         // Skips the next instruction if VX equals VY (usually the next instruction is a jump to skip a code block).
+
+        if (Registers[VX] == Registers[VY]) {
+            PC = PC + 4;
+        } else {
+            PC = PC + 2;
+        }
     }
 
     static void Opcode6XNN() {
         // Sets VX to NN.
+
+        Registers[VX] = Opcode & 0x00FF;
+        PC = PC + 2;
     }
     
     static void Opcode7XNN() {
         // Adds NN to VX (carry flag is not changed).
+
+        Registers[VX] = Registers[VX] + (Opcode & 0x00FF);
+        Registers[VX] &= 0xff;
+    }
+
+    static void Opcode8NNN() {
+        // ???
     }
 
     static void Opcode8XY0() {
@@ -234,59 +271,63 @@ class Emulator {
     }
     
     static void OpcodeDXYN() {
-        //
+        // Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
+        // Each row of 8 pixels is read as bit-coded starting from memory location I;
+        // I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen.
     }
 
     static void OpcodeENNN() {
-        //
+        // ???
     }
 
     static void OpcodeEX9E() {
-        //
+        // Skips the next instruction if the key stored in VX(only consider the lowest nibble) is pressed (usually the next instruction is a jump to skip a code block).
     }
 
     static void OpcodeEXA1() {
-        //
+        // Skips the next instruction if the key stored in VX(only consider the lowest nibble) is not pressed (usually the next instruction is a jump to skip a code block).
     }
 
     static void OpcodeFNNN() {
-        //
+        // ???
     }
     
     static void OpcodeFX07() {
-        //
+        // Sets VX to the value of the delay timer.
     }
 
     static void OpcodeFX0A() {
-        //
+        // A key press is awaited, and then stored in VX (blocking operation, all instruction halted until next key event, delay and sound timers should continue processing).
     }
 
     static void OpcodeFX15() {
-        //
+        // Sets the delay timer to VX.
     }
     
     static void OpcodeFX18() {
-        //
+        // Sets the sound timer to VX.
     }
 
     static void OpcodeFX1E() {
-        //
+        // Adds VX to I. VF is not affected.
     }
     
     static void OpcodeFX29() {
-        //
+        // Sets I to the location of the sprite for the character in VX(only consider the lowest nibble). Characters 0-F (in hexadecimal) are represented by a 4x5 font.
     }
 
     static void OpcodeFX33() {
-        //
+        // Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
     }
     
     static void OpcodeFX55() {
-        //
+        // Stores from V0 to VX (including VX) in memory, starting at address I.
+        // The offset from I is increased by 1 for each value written, but I itself is left unmodified.
     }
 
     static void OpcodeFX65() {
-        //
+        // Fills from V0 to VX (including VX) with values from memory, starting at address I.
+        // The offset from I is increased by 1 for each value read, but I itself is left unmodified.
     }
 
     static void DrawScreen(Color BackgroundColor, Color ColorPixels) {
