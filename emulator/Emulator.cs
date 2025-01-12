@@ -210,27 +210,43 @@ class Emulator {
         // Adds NN to VX (carry flag is not changed).
 
         Registers[VX] = Registers[VX] + (Opcode & 0x00FF);
-        Registers[VX] &= 0xff;
+        Registers[VX] &= 0xFF;
     }
 
     static void Opcode8NNN() {
-        // ???
+        // ???\
     }
 
     static void Opcode8XY0() {
         // Sets VX to the value of VY.
+
+        Registers[VX] = Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
     
     static void Opcode8XY1() {
         // Sets VX to VX or VY. (bitwise OR operation).
+
+        Registers[VX] = Registers[VX] | Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
 
     static void Opcode8XY2() {
         // Sets VX to VX and VY. (bitwise AND operation).
+
+        Registers[VX] = Registers[VX] & Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
     
     static void Opcode8XY3() {
         // Sets VX to VX xor VY.
+
+        Registers[VX] = Registers[VX] ^ Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
 
     static void Opcode8XY4() {
@@ -243,6 +259,11 @@ class Emulator {
 
     static void Opcode8XY6() {
         // Shifts VX to the right by 1, then stores the least significant bit of VX prior to the shift into VF.
+
+        Registers[0xF] = Registers[VX] & 0x0001;
+        Registers[VX] = Registers[VX] >> 1;
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
     
     static void Opcode8XY7() {
@@ -251,29 +272,51 @@ class Emulator {
 
     static void Opcode8XYE() {
         // Shifts VX to the left by 1, then sets VF to 1 if the most significant bit of VX prior to that shift was set, or to 0 if it was unset.
+
+        Registers[0xF] = Registers[VX] >> 7;
+        Registers[VX] = Registers[VX] << 1;
+        PC = PC + 2;
     }
     
     static void Opcode9XY0() {
         // Skips the next instruction if VX does not equal VY.
         // (Usually the next instruction is a jump to skip a code block).
+
+        if (Registers[VX] != Registers[VY]) {
+            PC = PC + 4;
+        } else {
+            PC = PC + 2;
+        }
     }
 
     static void OpcodeANNN() {
         // Sets I to the address NNN.
+
+        I = Opcode & 0x0FFF;
+        PC = PC + 2;
     }
     
     static void OpcodeBNNN() {
         // Jumps to the address NNN plus V0.
+
+        PC = (Opcode & 0x0FFF) + Registers[0];
     }
 
     static void OpcodeCXNN() {
         // Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
+
+        Random r = new Random();
+        Registers[VX] = r.Next(0, 255) & (Opcode & 0x00FF);
+        PC = PC + 2;
     }
     
     static void OpcodeDXYN() {
         // Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
         // Each row of 8 pixels is read as bit-coded starting from memory location I;
         // I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen.
+        /**/
+
+
     }
 
     static void OpcodeENNN() {
