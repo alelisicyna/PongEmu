@@ -8,7 +8,7 @@ using Raylib_cs;
 
 class Emulator {
     // Size of window
-    static int Increase = 20;
+    static int Increase = 10;
     static int[] WindowSize = [64 * Increase, 32 * Increase];
 
     // CPU
@@ -29,8 +29,7 @@ class Emulator {
     public static bool IsDrawing = true;
 
 
-    static Dictionary<KeyboardKey, int> KeySet = new Dictionary<KeyboardKey, int>()
-    {
+    static Dictionary<KeyboardKey, int> KeySet = new Dictionary<KeyboardKey, int>() {
         [KeyboardKey.One] = 1,
         [KeyboardKey.Two] = 2,
         [KeyboardKey.Three] = 3,
@@ -66,8 +65,7 @@ class Emulator {
         0xF0, 0x80, 0xF0, 0x80, 0xF0,  // E
         0xF0, 0x80, 0xF0, 0x80, 0x80,  // F
     ];
-    static Dictionary<int, System.Action> Opcodes = new Dictionary<int, System.Action>()
-    {
+    static Dictionary<int, System.Action> Opcodes = new Dictionary<int, System.Action>() {
         [0x0000] = Opcode0NNN,
         [0x00E0] = Opcode00E0,
         [0x000E] = Opcode00EE,
@@ -214,7 +212,18 @@ class Emulator {
     }
 
     static void Opcode8NNN() {
-        // ???\
+        // ???
+
+        if ((Opcode & 0x000F) == 0) {
+            Opcode8XY0();
+            return;
+        }
+
+        try {
+            Opcodes[Opcode & 0xf00f]();
+        } catch {
+            PC = PC + 2;
+        }
     }
 
     static void Opcode8XY0() {
@@ -251,10 +260,30 @@ class Emulator {
 
     static void Opcode8XY4() {
         // Adds VY to VX. VF is set to 1 when there's an overflow, and to 0 when there is not.
+
+        if ((Registers[VX] + Registers[VY]) > 0x00FF) {
+            Registers[0xF] = 1;
+        } else {
+            Registers[0xF] = 0;
+        }
+
+        Registers[VX] = Registers[VX] + Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
     
     static void Opcode8XY5() {
         // VY is subtracted from VX. VF is set to 0 when there's an underflow, and 1 when there is not. (i.e. VF set to 1 if VX >= VY and 0 if not).
+
+        if (Registers[VX] < Registers[VY]) {
+            Registers[15] = 0;
+        } else {
+            Registers[15] = 1;
+        }
+
+        Registers[VX] -= Registers[VY];
+        Registers[VX] &= 0xFF;
+        PC = PC + 2;
     }
 
     static void Opcode8XY6() {
@@ -268,6 +297,16 @@ class Emulator {
     
     static void Opcode8XY7() {
         // Sets VX to VY minus VX. VF is set to 0 when there's an underflow, and 1 when there is not. (i.e. VF set to 1 if VY >= VX).
+
+        if (Registers[VY] < Registers[VX]) {
+            Registers[15] = 0;
+        } else {
+            Registers[15] = 1;
+        }
+
+        Registers[VX] = Registers[VY] - Registers[VX];
+        Registers[VX] &= 0xff;
+        PC = PC + 2;
     }
 
     static void Opcode8XYE() {
@@ -314,9 +353,24 @@ class Emulator {
         // Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
         // Each row of 8 pixels is read as bit-coded starting from memory location I;
         // I value does not change after the execution of this instruction. As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen.
-        /**/
 
+        int Height = Opcode & 0x000F;
+        Registers[0xF] = 0;
+        for (int h = 0; h < Height; h++) {
+            int pixel = Memory[I + h];
+            for (int w = 0; w < 0; w++) {
+                if ((pixel & (0x80 >> w)) != 0) {
+                    int loc = (Registers[VX] + w + (h + Registers[VY]) * 64) % 2048;
+                    if (ScreenBuffer[loc] == 1) {
+                        Registers[0xf] = 1;
+                    }
+                    ScreenBuffer[loc] ^= 1;
+                }
+            }
+        }
 
+        IsDrawing = true;
+        PC = PC + 2;
     }
 
     static void OpcodeENNN() {
